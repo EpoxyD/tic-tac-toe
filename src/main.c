@@ -1,55 +1,67 @@
 #include <curses.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
-static void finish(int sig);
+typedef enum state {
+  GAME_BUSY,
+  GAME_PLAYER_1,
+  GAME_PLAYER_2,
+  GAME_STALEMATE
+} state;
 
-int main(int argc, char *argv[]) {
-  int num = 0;
+typedef struct grid {
+  state gamestate;
+  const int rows;
+  const int columns;
+  char ** field;
+} grid;
 
-  /* initialize your non-curses data structures here */
-
-  (void)signal(SIGINT, finish); /* arrange interrupts to terminate */
-
-  (void)initscr();      /* initialize the curses library */
-  keypad(stdscr, TRUE); /* enable keyboard mapping */
-  (void)nonl();         /* tell curses not to do NL->CR/NL on output */
-  (void)cbreak();       /* take input chars one at a time, no wait for \n */
-  (void)echo();         /* echo input - in color */
-
-  if (has_colors()) {
-    start_color();
-
-    /*
-     * Simple color assignment, often all we need.  Color pair 0 cannot
-     * be redefined.  This example uses the same value for the color
-     * pair as for the foreground color, though of course that is not
-     * necessary:
-     */
-    init_pair(1, COLOR_RED, COLOR_BLACK);
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);
-    init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(4, COLOR_BLUE, COLOR_BLACK);
-    init_pair(5, COLOR_CYAN, COLOR_BLACK);
-    init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
-    init_pair(7, COLOR_WHITE, COLOR_BLACK);
+static grid initialize_grid(const int rows, const int columns) {
+  grid new_grid = {
+    .gamestate = GAME_BUSY,
+    .rows = rows,
+    .columns = columns,
+    .field = calloc(rows, sizeof(char *))
+  };
+  
+  for (int i = 0; i < rows; i++) {
+    (new_grid.field)[i] = calloc(columns, sizeof(char));
+    for (int j = 0; j < columns; j++) {
+      (new_grid.field)[i][j] = '.';
+    }
   }
-
-  for (;;) {
-    int c = getch(); /* refresh, accept single keystroke of input */
-    attrset(COLOR_PAIR(num % 8));
-    num++;
-
-    /* process the command keystroke */
-  }
-
-  finish(0); /* we are done */
+  
+  return new_grid;
 }
 
-static void finish(int sig) {
-  endwin();
+static void play_game() {
+  grid board = initialize_grid(3, 3);
+  (void) board;
+}
 
-  /* do your non-curses wrapup here */
+int main(int argc, char *argv[]) {
+  char option[64];
 
-  exit(0);
+  while(true) {
+    printf("Do you want to [ play | quit ] ? ");
+    scanf("%s", option);
+
+    if(!strcmp(option, "play")) {
+      printf("Let's play some tic-tac-toe!\n");
+      play_game();
+    }
+    else if(!strcmp(option, "quit")) {
+      printf("We should do this again some time\n");
+      break;
+    }
+    else {
+      printf("Invalid option, try again!\n");
+    }
+    
+    printf("Press Any Key to Continue\n");
+    while(getchar()!='\n');
+    getchar();
+  }
 }
