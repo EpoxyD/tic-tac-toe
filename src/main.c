@@ -1,20 +1,18 @@
+#include <curses.h>
 #include <ncurses.h>
 #include <stdatomic.h>
 #include <stdint.h>
 
-#define CEL_HEIGHT 3
-#define CEL_WIDTH (CEL_HEIGHT * 3)
+#define BORDER_SIZE (1)
 
-#define BOARD_HEIGHT (3 * CEL_HEIGHT + 1)
-#define BOARD_WIDTH (3 * CEL_WIDTH + 1)
+#define CEL_HEIGHT_INNER    (3)
+#define CEL_WIDTH_INNER     (3 * CEL_HEIGHT_INNER)
 
-int startx = 0;
-int starty = 0;
+#define CEL_HEIGHT_OUTER    (CEL_HEIGHT_INNER + BORDER_SIZE)
+#define CEL_WIDTH_OUTER     (CEL_WIDTH_INNER  + BORDER_SIZE)
 
-char *choices[] = {
-    "Choice 1", "Choice 2", "Choice 3", "Choice 4", "Exit",
-};
-int n_choices = sizeof(choices) / sizeof(char *);
+#define BOARD_HEIGHT        (3 * CEL_HEIGHT_OUTER)
+#define BOARD_WIDTH         (3 * CEL_WIDTH_OUTER )
 
 void init_screen(void)
 {
@@ -28,46 +26,51 @@ void init_screen(void)
 
 void create_board_pattern(WINDOW *board)
 {
-  for (int w = 1; w < BOARD_WIDTH - 1; w++)
+  for (int w = 1; w < BOARD_WIDTH; w++)
   {
     // Create horizontal lines
-    wmove(board, CEL_HEIGHT * 1, w);
+    wmove(board, 1 * CEL_HEIGHT_OUTER, w);
     waddch(board, ACS_HLINE);
-    wmove(board, CEL_HEIGHT * 2, w);
+    wmove(board, 2 * CEL_HEIGHT_OUTER, w);
+    waddch(board, ACS_HLINE);
+    wmove(board, 3 * CEL_HEIGHT_OUTER, w);
     waddch(board, ACS_HLINE);
 
     // Create top and bottom bar
-    if ((w % CEL_WIDTH == 0))
+    if (w % CEL_WIDTH_OUTER == 0)
     {
       wmove(board, 0, w);
       waddch(board, ACS_TTEE);
-      wmove(board, BOARD_HEIGHT - 1, w);
+      wmove(board, BOARD_HEIGHT, w);
       waddch(board, ACS_BTEE);
     }
   }
 
-  for (int h = 1; h < BOARD_HEIGHT - 1; h++)
+  for (int h = 1; h < BOARD_HEIGHT; h++)
   {
     // Create vertical lines
-    wmove(board, h, CEL_WIDTH * 1);
+    wmove(board, h, 1 * CEL_WIDTH_OUTER);
     waddch(board, ACS_VLINE);
-    wmove(board, h, CEL_WIDTH * 2);
+    wmove(board, h, 2 * CEL_WIDTH_OUTER);
+    waddch(board, ACS_VLINE);
+    wmove(board, h, 3 * CEL_WIDTH_OUTER);
     waddch(board, ACS_VLINE);
 
     // Create left and right bar
-    if ((h % CEL_HEIGHT == 0))
+    if (h % CEL_HEIGHT_OUTER == 0)
     {
       wmove(board, h, 0);
       waddch(board, ACS_LTEE);
-      wmove(board, h, BOARD_WIDTH - 1);
+      wmove(board, h, BOARD_WIDTH);
       waddch(board, ACS_RTEE);
     }
   }
 
   // Create crossing lines
-  for (int w = CEL_WIDTH; w < BOARD_WIDTH - 1; w += CEL_WIDTH)
+  for (int w = CEL_WIDTH_OUTER; w < BOARD_WIDTH; w += CEL_WIDTH_OUTER)
   {
-    for (int h = CEL_HEIGHT; h < BOARD_HEIGHT - 1; h += CEL_HEIGHT)
+    for (int h = CEL_HEIGHT_OUTER; h < BOARD_HEIGHT;
+         h += CEL_HEIGHT_OUTER)
     {
       wmove(board, h, w);
       waddch(board, ACS_PLUS);
@@ -75,14 +78,27 @@ void create_board_pattern(WINDOW *board)
   }
 }
 
+void create_board_start(WINDOW *board)
+{
+  for (int w = CEL_WIDTH_OUTER / 2; w < BOARD_WIDTH; w += CEL_WIDTH_OUTER)
+  {
+    for (int h = CEL_HEIGHT_OUTER / 2; h < BOARD_HEIGHT; h += CEL_HEIGHT_OUTER)
+    {
+      wmove(board, h, w);
+      waddch(board, '0');
+    }
+  }
+}
+
 WINDOW *create_board(void)
 {
   // Horizontal scales about 1/3 less then vertical
-  WINDOW *board = newwin(BOARD_HEIGHT, BOARD_WIDTH, 0, 0);
+  WINDOW *board = newwin(BOARD_HEIGHT + BORDER_SIZE, BOARD_WIDTH + BORDER_SIZE, 0, 0);
   keypad(board, TRUE);
   box(board, 0, 0);
 
   create_board_pattern(board);
+  create_board_start(board);
   wrefresh(board);
 
   return board;
