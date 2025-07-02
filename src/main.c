@@ -1,99 +1,64 @@
-#include <curses.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <ncurses.h>
+#include <stdint.h>
 
-typedef enum state {
-  GAME_BUSY,
-  GAME_PLAYER_1,
-  GAME_PLAYER_2,
-  GAME_STALEMATE
-} state;
+#define CEL_HEIGHT      3
+#define CEL_WIDTH       (CEL_HEIGHT * 3)
 
-typedef struct grid {
-  state gamestate;
-  const int rows;
-  const int columns;
-  char **field;
-} grid;
+#define BOARD_HEIGHT    (3 * CEL_HEIGHT + 1)
+#define BOARD_WIDTH     (3 * CEL_WIDTH  + 1)
 
-const char *congratulations[] = {"Well done ",
-                                 "Amazing game, ",
-                                 "I could not have done it any better ",
-                                 "Slick move at the start to claim the win ",
-                                 "I should've put a fiver on ",
-                                 "Stop it, he's already dead ",
-                                 "I cannot believe you actually did it, ",
-                                 "Mom would be proud of you ",
-                                 "What a save, ",
-                                 "FINISH HIM "};
+int startx = 0;
+int starty = 0;
 
-static grid initialize_grid(const int rows, const int columns) {
-  grid new_grid = {.gamestate = GAME_BUSY,
-                   .rows = rows,
-                   .columns = columns,
-                   .field = calloc(rows, sizeof(char *))};
+char *choices[] = {
+    "Choice 1", "Choice 2", "Choice 3", "Choice 4", "Exit",
+};
+int n_choices = sizeof(choices) / sizeof(char *);
 
-  for (int i = 0; i < rows; i++) {
-    (new_grid.field)[i] = calloc(columns, sizeof(char));
-    for (int j = 0; j < columns; j++) {
-      (new_grid.field)[i][j] = '.';
-    }
-  }
+void init_screen(void) {
+  initscr();
+  clear();
+  noecho();
+  cbreak();
 
-  return new_grid;
+  curs_set(FALSE);
 }
 
-static void print_endscreen(const int state) {
-  int option = rand() % 10;
-  switch (state) {
-  case GAME_PLAYER_1:
-    printf("%s Player 1!\n", congratulations[option]);
-    break;
-  case GAME_PLAYER_2:
-    printf("%s Player 2!\n", congratulations[option]);
-    break;
-  case GAME_STALEMATE:
-    printf("We can't settle for a draw, can we?\n");
-    break;
-  default:
-    printf("%s\n", congratulations[option]);
-    break;
+void create_board_pattern(WINDOW *board) {
+  // Create top and bottom bar:
+  for (int w = CEL_WIDTH; w < BOARD_WIDTH - 1; w += CEL_WIDTH) {
+    wmove(board, 0, w);
+    waddch(board, ACS_TTEE);
+    wmove(board, BOARD_HEIGHT - 1, w);
+    waddch(board, ACS_BTEE);
+  }
+
+  // Create left and right bar
+  for (int h = CEL_HEIGHT; h < BOARD_HEIGHT - 1; h += CEL_HEIGHT) {
+    wmove(board, h, 0);
+    waddch(board, ACS_LTEE);
+    wmove(board, h, BOARD_WIDTH - 1);
+    waddch(board, ACS_RTEE);
   }
 }
 
-static void play_game() {
-  grid board = initialize_grid(3, 3);
-  while (board.gamestate == GAME_BUSY) {
-    break;
-  }
-  print_endscreen(board.gamestate);
-  return;
+WINDOW *create_board(void) {
+  // Horizontal scales about 1/3 less then vertical
+  WINDOW *board = newwin(BOARD_HEIGHT, BOARD_WIDTH, 0, 0);
+  keypad(board, TRUE);
+  box(board, 0, 0);
+
+  create_board_pattern(board);
+  wrefresh(board);
+
+  return board;
 }
 
-int main(int argc, char *argv[]) {
-  srand(time(NULL));
-  char option[64];
+int main() {
+  init_screen();
 
-  while (true) {
-    printf("Do you want to [ play | quit ] ? ");
-    scanf("%s", option);
+  WINDOW *board = create_board();
+  wgetch(board);
 
-    if (!strcmp(option, "play")) {
-      printf("Let's play some tic-tac-toe!\n");
-      play_game();
-    } else if (!strcmp(option, "quit")) {
-      printf("We should do this again some time\n");
-      break;
-    } else {
-      printf("Invalid option, try again!\n");
-    }
-
-    printf("Press Any Key to Continue\n");
-    while (getchar() != '\n')
-      ;
-    getchar();
-  }
+  endwin();
 }

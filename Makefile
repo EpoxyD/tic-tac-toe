@@ -1,11 +1,12 @@
 PROGRAM=tic-tac-toe
 CFLAGS=-g -Wall -Werror
+LFLAGS=-Iinc
 LDFLAGS=-lcurses
 
 all: ${PROGRAM}
 
 ${PROGRAM}:
-	gcc src/* ${CFLAGS} ${LDFLAGS} -o ${PROGRAM}.app
+	gcc src/* ${CFLAGS} ${LFLAGS} ${LDFLAGS} -o ${PROGRAM}.app
 
 clean:
 	rm -rf ${PROGRAM}.app
